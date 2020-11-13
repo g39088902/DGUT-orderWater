@@ -10,27 +10,24 @@ password = ''
 loginUrl = 'https://cas.dgut.edu.cn/home/Oauth/getToken/appid/ehall/state/home.html'
 homeUrl = ''
 orderUrl = 'http://cas.dgut.edu.cn/hq/home/Pay/checkPay.hq'
-order_data = '{"campus_id":1,"area_id":1,"building_id": ,"room_number":"","barrel_id":888,"password":"","send_num":1,"phone":""}'
+order_data = {"campus_id": 1, "area_id": 1, "building_id": 建筑id, "room_number": 房间号, "barrel_id": 888, "password": "", "send_num": 1, "phone": 手机号}
 
 
 def login():
     global homeUrl
     session = requests.session()
     html = session.get(loginUrl).content.decode('utf-8')
-    headers = {'X-Requested-With': 'XMLHttpRequest'}
-    cookies = {"languageIndex": "0", "last_oauth_appid": "illnessProtectionHome", "last_oauth_state": "home"}
     pattern = re.compile(r"var token = \"(.*?)\";$", re.MULTILINE | re.DOTALL)
     data = {'username': username, 'password': password, '__token__': pattern.search(html).group(1),
             'wechat_verif': ''}
     console_msg('开始登录验证...', 2)
-    response = json.loads(session.post(url=loginUrl, headers=headers, cookies=cookies, data=data).json())
+    response = json.loads(session.post(url=loginUrl, data=data).content.decode('utf-8'))
     session.close()
     if response['message'] != '验证通过':
         console_msg('登录验证失败', 1)
         return 1
     console_msg('登录验证成功', 0)
     homeUrl = response['info']
-    # console_msg('homeUrl: \'' + homeUrl + '\'', 2)
     return 0
 
 
@@ -38,16 +35,9 @@ def order():
     session = requests.session()
     html = session.get(url=homeUrl)
     session.get(html.url)
-    pattern = re.compile(r"token=(.*?)$", re.MULTILINE | re.DOTALL)
-    console_msg('获取token...')
-    token = pattern.search(html.url).group(1)
-    console_msg('token: \'' + token + '\'', 0)
-    headers = {'Host': 'ehall.dgut.edu.cn', 'Referer': 'http://ehall.dgut.edu.cn/WaterBookP',
-               'Origin': 'http://ehall.dgut.edu.cn', 'Content-type': 'application/json; charset=utf-8',
-               'Accept-Encoding': 'gzip, deflate', 'Cookie': 'PHPSESSID=' + token, 'authorization': token}
     console_msg('发送订水请求...')
     response = json.loads(session.post(url='http://ehall.dgut.edu.cn/hq/home/Distribution/addDistribution.hq',
-                                       headers=headers, data=order_data).content.decode('utf-8'))
+                                       data=order_data).content.decode('utf-8'))
     if response['message'] == '订水成功，请等待配送':
         console_msg(response['message'], 0)
     elif response['message'] == '账户余额不足':
