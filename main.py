@@ -10,7 +10,7 @@ password = ''
 loginUrl = 'https://cas.dgut.edu.cn/home/Oauth/getToken/appid/ehall/state/home.html'
 homeUrl = ''
 orderUrl = 'http://cas.dgut.edu.cn/hq/home/Pay/checkPay.hq'
-order_data = '{"campus_id":1,"area_id":1,"building_id":,"room_number":"","barrel_id":888,"password":"","send_num":1,"phone":""}'
+order_data = '{"campus_id":1,"area_id":1,"building_id": ,"room_number":"","barrel_id":888,"password":"","send_num":1,"phone":""}'
 
 
 def login():
@@ -22,6 +22,7 @@ def login():
     pattern = re.compile(r"var token = \"(.*?)\";$", re.MULTILINE | re.DOTALL)
     data = {'username': username, 'password': password, '__token__': pattern.search(html).group(1),
             'wechat_verif': ''}
+    console_msg('开始登录验证...', 2)
     response = json.loads(session.post(url=loginUrl, headers=headers, cookies=cookies, data=data).json())
     session.close()
     if response['message'] != '验证通过':
@@ -29,7 +30,7 @@ def login():
         return 1
     console_msg('登录验证成功', 0)
     homeUrl = response['info']
-    console_msg('homeUrl: \'' + homeUrl + '\'', 0)
+    # console_msg('homeUrl: \'' + homeUrl + '\'', 2)
     return 0
 
 
@@ -38,18 +39,31 @@ def order():
     html = session.get(url=homeUrl)
     session.get(html.url)
     pattern = re.compile(r"token=(.*?)$", re.MULTILINE | re.DOTALL)
+    console_msg('获取token...')
     token = pattern.search(html.url).group(1)
     console_msg('token: \'' + token + '\'', 0)
     headers = {'Host': 'ehall.dgut.edu.cn', 'Referer': 'http://ehall.dgut.edu.cn/WaterBookP',
                'Origin': 'http://ehall.dgut.edu.cn', 'Content-type': 'application/json; charset=utf-8',
                'Accept-Encoding': 'gzip, deflate', 'Cookie': 'PHPSESSID=' + token, 'authorization': token}
-    response = session.post(url='http://ehall.dgut.edu.cn/hq/home/Distribution/addDistribution.hq', headers=headers,
-                            data=order_data)
-    print(response.content.decode('utf-8'))
+    console_msg('发送订水请求...')
+    response = json.loads(session.post(url='http://ehall.dgut.edu.cn/hq/home/Distribution/addDistribution.hq',
+                                       headers=headers, data=order_data).content.decode('utf-8'))
+    if response['message'] == '订水成功，请等待配送':
+        console_msg(response['message'], 0)
+    elif response['message'] == '账户余额不足':
+        console_msg(response['message'], 2)
+    elif response['message'] == '桶装水正在配送中，您暂时无法再订购桶装水了。':
+        console_msg(response['message'], 2)
+    else:
+        console_msg(response['message'], 1)
 
 
 def console_msg(msg, level=2):
-    header = ('[SUCCESS]', '[ERROR]', '[INFO]')
+    header = (
+        '[SUCCESS]',
+        '[ERROR  ]',
+        '[INFO   ]'
+    )
     color = ("\033[32;1m", "\033[31;1m", "\033[36;1m")
     print(color[level], header[level], time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), msg + "\033[0m")
 
