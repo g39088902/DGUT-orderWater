@@ -10,6 +10,7 @@ password = ''
 loginUrl = 'https://cas.dgut.edu.cn/home/Oauth/getToken/appid/ehall/state/home.html'
 homeUrl = ''
 orderUrl = 'http://cas.dgut.edu.cn/hq/home/Pay/checkPay.hq'
+#以下中文内容和要改，barrel_id是指不同品牌规格的桶装水，默认888为16.8L观音山
 order_data = {"campus_id": 1, "area_id": 1, "building_id": 建筑id, "room_number": 房间号, "barrel_id": 888, "password": "", "send_num": 1, "phone": 手机号}
 
 
